@@ -229,7 +229,7 @@
 
 			<object type="button">
 				<highlight color="%highlight_color%" />
-				<placement x="%col2_x%" y="%row1_y%" />
+				<placement x="%col1_x%" y="%mrom_row1_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Rename</text>
 				<image resource="main_button" />
@@ -242,7 +242,7 @@
 
 			<object type="button">
 				<highlight color="%highlight_color%" />
-				<placement x="%col3_x%" y="%row1_y%" />
+				<placement x="%col2_x%" y="%mrom_row1_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Delete</text>
 				<image resource="main_button" />
@@ -264,7 +264,7 @@
 					<condition var1="tw_multirom_is_android" var2="1" />
 					<condition var1="tw_multirom_has_bootimg" var2="1" />
 				</conditions>
-				<placement x="%col4_x%" y="%row1_y%" />
+				<placement x="%col3_x%" y="%mrom_row1_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Backup</text>
 				<image resource="main_button" />
@@ -290,7 +290,7 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%col4_x%" y="%row2_y%" />
+				<placement x="%col3_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>ADB sideload</text>
 				<image resource="main_button" />
@@ -310,7 +310,7 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%col2_x%" y="%row2_y%" />
+				<placement x="%col1_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Flash ZIP</text>
 				<image resource="main_button" />
@@ -320,7 +320,7 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_ubuntu" var2="1" />
-				<placement x="%col2_x%" y="%row2_y%" />
+				<placement x="%col1_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Re-patch init</text>
 				<image resource="main_button" />
@@ -339,7 +339,7 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_touch" var2="1" />
-				<placement x="%col2_x%" y="%row2_y%" />
+				<placement x="%col1_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Re-patch init</text>
 				<image resource="main_button" />
@@ -358,7 +358,7 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_ubuntu" var2="1" />
-				<placement x="%col3_x%" y="%row2_y%" />
+				<placement x="%col2_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Disable flash-kernel</text>
 				<image resource="main_button" />
@@ -380,7 +380,7 @@
 					<condition var1="tw_multirom_is_android" var2="1" />
 					<condition var1="tw_multirom_has_bootimg" var2="0" />
 				</conditions>
-				<placement x="%col3_x%" y="%row2_y%" />
+				<placement x="%col2_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Add boot.img</text>
 				<image resource="main_button" />
@@ -400,7 +400,7 @@
 					<condition var1="tw_multirom_is_android" var2="1" />
 					<condition var1="tw_multirom_has_bootimg" var2="1" />
 				</conditions>
-				<placement x="%col3_x%" y="%row2_y%" />
+				<placement x="%col2_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Remove boot.img</text>
 				<image resource="main_button" />
@@ -420,10 +420,10 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%mrom_wipe_col1_x%" y="%row3_y%" />
+				<placement x="%col1_x%" y="%mrom_row3_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Wipe /data</text>
-				<image resource="medium_button" />
+				<image resource="main_button" />
 				<actions>
 					<action function="set">tw_multirom_wipe=data</action>
 					<action function="set">tw_back=multirom_manage</action>
@@ -441,10 +441,10 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%mrom_wipe_col2_x%" y="%row3_y%" />
+				<placement x="%col2_x%" y="%mrom_row3_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Wipe dalvik</text>
-				<image resource="medium_button" />
+				<image resource="main_button" />
 				<actions>
 					<action function="set">tw_multirom_wipe=dalvik</action>
 					<action function="set">tw_back=multirom_manage</action>
@@ -462,10 +462,10 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%mrom_wipe_col3_x%" y="%row3_y%" />
+				<placement x="%col3_x%" y="%mrom_row3_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Wipe /cache</text>
-				<image resource="medium_button" />
+				<image resource="main_button" />
 				<actions>
 					<action function="set">tw_multirom_wipe=cache</action>
 					<action function="set">tw_back=multirom_manage</action>
