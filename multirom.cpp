@@ -15,6 +15,8 @@
 #error "libbootimg version 0.2.0 or higher is required. Please update libbootimg."
 #endif
 
+#include "blobunpack.h"
+
 #include "multirom.h"
 #include "partitions.hpp"
 #include "twrp-functions.hpp"
@@ -32,12 +34,16 @@ extern "C" {
 
 std::string MultiROM::m_path = "";
 std::string MultiROM::m_boot_dev = "";
+std::string MultiROM::m_staging_dev = "";
 std::string MultiROM::m_mount_rom_paths[2] = { "", "" };
 std::string MultiROM::m_curr_roms_path = "";
 MROMInstaller *MultiROM::m_installer = NULL;
 MultiROM::baseFolders MultiROM::m_base_folders;
 int MultiROM::m_base_folder_cnt = 0;
+
+
 bool MultiROM::m_has_firmware = false;
+
 
 base_folder::base_folder(const std::string& name, int min_size, int size)
 {
@@ -100,6 +106,13 @@ void MultiROM::findPath()
 		return;
 	}
 
+	TWPartition *staging = PartitionManager.Find_Partition_By_Path("/staging");
+	if (!staging) {
+		gui_print("Failed to find staging partition!\n");
+		m_path.clear();
+		return;
+	}
+
 	if(!data->Mount(true))
 	{
 		gui_print("Failed to mount /data partition!\n");
@@ -108,6 +121,7 @@ void MultiROM::findPath()
 	}
 
 	m_boot_dev = boot->Actual_Block_Device;
+	m_staging_dev = staging->Actual_Block_Device;
 
 	TWPartition *fw = PartitionManager.Find_Partition_By_Path("/firmware");
 	m_has_firmware = (fw && fw->Current_File_System == "vfat");
@@ -755,11 +769,12 @@ void MultiROM::restoreROMPath()
 #define MR_UPDATE_SCRIPT_PATH  "META-INF/com/google/android/"
 #define MR_UPDATE_SCRIPT_NAME  "META-INF/com/google/android/updater-script"
 
-bool MultiROM::flashZip(std::string rom, std::string file)
+// Flash ZIP for most cases, unless running a OpenRecoveryScript for a
+// seconddary ROM (see below)
+bool MultiROM::flashZip(const std::string &rom, std::string file, int *wipe_cache)
 {
 	int status;
 	int verify_status = 0;
-	int wipe_cache = 0;
 
 	gui_print("Flashing ZIP file %s\n", file.c_str());
 	gui_print("ROM: %s\n", rom.c_str());
@@ -767,31 +782,36 @@ bool MultiROM::flashZip(std::string rom, std::string file)
 	if(!verifyZIP(file, verify_status))
 		return false;
 
-	gui_print("Preparing ZIP file...\n");
-	if(!prepareZIP(file))  // may change file var
-		return false;
+	std::string base = getRomsPath() + rom;
+	normalizeROMPath(base);
+	std::string bootBlob = base + "/boot.blob";
+	std::string bootImg  = base + "/boot.img";
+	std::string bootBlobRealdata(bootBlob);
 
-	if(!changeMounts(rom))
+	if (rom != INTERNAL_NAME)
 	{
-		gui_print("Failed to change mountpoints!\n");
-		return false;
+		gui_print("Preparing ZIP file...\n");
+		if(!prepareZIP(file))  // may change file var
+			return false;
+
+		if(!changeMounts(rom))
+		{
+			gui_print("Failed to change mountpoints!\n");
+			return false;
+		}
+
+		translateToRealdata(bootBlobRealdata);
+		translateToRealdata(file);
 	}
-
-	std::string boot = getRomsPath() + rom;
-	normalizeROMPath(boot);
-	boot += "/boot.img";
-
-	translateToRealdata(file);
-	translateToRealdata(boot);
 	
-	if(!fakeBootPartition(boot.c_str()))
+	if(!fakeBootPartition(bootBlobRealdata.c_str()))
 	{
 		restoreMounts();
 		return false;
 	}
 
 	DataManager::SetValue(TW_SIGNED_ZIP_VERIFY_VAR, 0);
-	status = TWinstall_zip(file.c_str(), &wipe_cache);
+	status = TWinstall_zip(file.c_str(), wipe_cache);
 	DataManager::SetValue(TW_SIGNED_ZIP_VERIFY_VAR, verify_status);
 
 	system("rm -r "MR_UPDATE_SCRIPT_PATH);
@@ -806,6 +826,12 @@ bool MultiROM::flashZip(std::string rom, std::string file)
 	restoreBootPartition();
 	restoreMounts();
 
+	if (TWFunc::Get_File_Size(bootBlob) > 0)
+		unpackBootBlob(bootBlob, bootImg);
+	else
+		gui_print("WARNING: Ignoring empty boot blob!\n");
+	remove(bootBlob.c_str());
+
 	std::string sideload_path = DataManager::GetStrValue("tw_mrom_sideloaded");
 	if(!sideload_path.empty())
 	{
@@ -816,6 +842,8 @@ bool MultiROM::flashZip(std::string rom, std::string file)
 	return (status == INSTALL_SUCCESS);
 }
 
+// Flash ZIP for secondary ROM from OpenRecoveryScript. Mount points
+// and fake boot have been setup in executeCacheScripts() before.
 bool MultiROM::flashORSZip(std::string file, int *wipe_cache)
 {
 	int status, verify_status = 0;
@@ -1040,7 +1068,7 @@ exit:
 	return false;
 }
 
-bool MultiROM::injectBoot(std::string img_path, bool only_if_older)
+bool MultiROM::injectBoot(const std::string &img_path, const char *newKernel)
 {
 	int rd_cmpr;
 	struct bootimg img;
@@ -1074,7 +1102,8 @@ bool MultiROM::injectBoot(std::string img_path, bool only_if_older)
 		goto fail;
 	}
 
-	if(only_if_older)
+	// Don't check the trampoline version, if we need to load a new kernel
+	if (!newKernel)
 	{
 		int tr_rd_ver = getTrampolineVersion("/tmp/boot/rd/init", true);
 		int tr_my_ver = getTrampolineVersion();
@@ -1113,6 +1142,14 @@ bool MultiROM::injectBoot(std::string img_path, bool only_if_older)
 	{
 		gui_print("Failed to load modified ramdisk!\n");
 		goto fail;
+	}
+
+	// load new kernel
+	if (newKernel) {
+		if(libbootimg_load_kernel(&img, newKernel) < 0) {
+			gui_print("Failed to load new kernel!\n");
+			goto fail;
+		}
 	}
 
 #ifdef MR_RD_ADDR
@@ -1215,16 +1252,31 @@ bool MultiROM::compressRamdisk(const char* src, const char* dst, int cmpr)
 	}
 }
 
-int MultiROM::copyBoot(std::string& orig, std::string rom)
+// action "multirom_replace_bootimg"
+bool MultiROM::replaceBootImg(const std::string &bootBlob, const std::string &rom)
 {
-	std::string img_path = getRomsPath() + "/" + rom + "/boot.img";
-	char cmd[256];
-	sprintf(cmd, "cp \"%s\" \"%s\"", orig.c_str(), img_path.c_str());
-	if(system(cmd) != 0)
-		return 1;
+	std::string bootImg = getRomsPath() + rom + "/boot.img";
 
-	orig.swap(img_path);
-	return 0;
+	if (!unpackBootBlob(bootBlob, bootImg))
+		return false;
+	if (!injectBoot(bootImg))
+		return false;
+
+	return true;
+}
+
+// action "multirom_reinstall"
+bool MultiROM::reinstall()
+{
+	// Save current boot image for primary ROM
+	std::string primaryBootIng = getPath() + "/"INTERNAL_NAME"/boot.img";
+	system_args("dd if=%s of=\"%s\"", m_boot_dev.c_str(), primaryBootIng.c_str());
+	// No need to inject the primary boot image, it boots with the
+	// proper partitions automagically
+
+	// Install boot image with new kernel and injected ramdisk
+	std::string newKernel = getPath() + "/zImage";
+	return injectBoot(m_boot_dev.c_str(), newKernel.c_str());
 }
 
 std::string MultiROM::getNewRomName(std::string zip, std::string def)
@@ -1465,14 +1517,22 @@ bool MultiROM::extractBootForROM(std::string base)
 	system("rm -r /tmp/boot");
 	system_args("cd \"%s/boot\" && rm cmdline ramdisk.gz zImage", base.c_str());
 
-	if (DataManager::GetIntValue("tw_multirom_share_kernel") == 0)
-	{
-		gui_print("Injecting boot.img..\n");
-		if(!injectBoot(base + "/boot.img") != 0)
-			return false;
+	gui_print("Injecting boot.img..\n");
+	if(!injectBoot(base + "/boot.img") != 0)
+		return false;
+
+	return true;
+}
+
+bool MultiROM::unpackBootBlob(const std::string &bootBlob, const std::string &bootImg)
+{
+	gui_print("Unpacking boot blob...\n");
+
+	if (!blobUnPackBootImage(bootBlob.c_str(), bootImg.c_str())) {
+		LOGERR("Failed to unpack boot blob!\n");
+		return false;
 	}
-	else
-		system_args("rm \"%s/boot.img\"", base.c_str());
+
 	return true;
 }
 
@@ -1724,7 +1784,8 @@ bool MultiROM::addROM(std::string zip, int os, std::string loc)
 			std::string src = DataManager::GetStrValue("tw_multirom_add_source");
 			if(src == "zip")
 			{
-				if(!flashZip(name, zip))
+				int wipe_cache = 0;
+				if(!flashZip(name, zip, &wipe_cache))
 					break;
 
 				if(!extractBootForROM(root))
@@ -1816,14 +1877,15 @@ bool MultiROM::addROM(std::string zip, int os, std::string loc)
 
 			gui_print("  \n");
 			gui_print("Flashing device zip...\n");
-			if(!flashZip(name, device_zip))
+			int wipe_cache = 0;
+			if(!flashZip(name, device_zip, &wipe_cache))
 				break;
 
 			gui_print("  \n");
 			gui_print("Flashing core zip...\n");
 
 			system("ln -sf /sbin/gnutar /sbin/tar");
-			bool flash_res = flashZip(name, core_zip);
+			bool flash_res = flashZip(name, core_zip, &wipe_cache);
 			system("ln -sf /sbin/busybox /sbin/tar");
 			if(!flash_res)
 				break;
@@ -2281,9 +2343,9 @@ int MultiROM::system_args(const char *fmt, ...)
 
 bool MultiROM::fakeBootPartition(const char *fakeImg)
 {
-	if(access((m_boot_dev + "-orig").c_str(), F_OK) >= 0)
+	if(access((m_staging_dev + "-orig").c_str(), F_OK) >= 0)
 	{
-		gui_print("Failed to fake boot partition, %s-orig already exists!\n", m_boot_dev.c_str());
+		gui_print("Failed to fake boot partition, %s-orig already exists!\n", m_staging_dev.c_str());
 		return false;
 	}
 
@@ -2296,15 +2358,11 @@ bool MultiROM::fakeBootPartition(const char *fakeImg)
 			return false;
 		}
 		close(fd);
-
-		// Copy current boot.img as base
-		system_args("dd if=\"%s\" of=\"%s\"", m_boot_dev.c_str(), fakeImg);
-		gui_print("Current boot sector was used as base for fake boot.img!\n");
 	}
 
-	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_boot_dev.c_str());
-	system_args("mv \"%s\" \"%s\"-orig", m_boot_dev.c_str(), m_boot_dev.c_str());
-	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_boot_dev.c_str());
+	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_staging_dev.c_str());
+	system_args("mv \"%s\" \"%s\"-orig", m_staging_dev.c_str(), m_staging_dev.c_str());
+	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_staging_dev.c_str());
 
 #ifdef BOARD_BOOTIMAGE_PARTITION_SIZE
 	// because of bloody abootimg
@@ -2315,14 +2373,14 @@ bool MultiROM::fakeBootPartition(const char *fakeImg)
 
 void MultiROM::restoreBootPartition()
 {
-	if(access((m_boot_dev + "-orig").c_str(), F_OK) < 0)
+	if(access((m_staging_dev + "-orig").c_str(), F_OK) < 0)
 	{
-		gui_print("Failed to restore boot partition, %s-orig does not exist!\n", m_boot_dev.c_str());
+		gui_print("Failed to restore boot partition, %s-orig does not exist!\n", m_staging_dev.c_str());
 		return;
 	}
 
-	system_args("rm \"%s\"", m_boot_dev.c_str());
-	system_args("mv \"%s\"-orig \"%s\"", m_boot_dev.c_str(), m_boot_dev.c_str());
+	system_args("rm \"%s\"", m_staging_dev.c_str());
+	system_args("mv \"%s\"-orig \"%s\"", m_staging_dev.c_str(), m_staging_dev.c_str());
 	remove("/tmp/mrom_fakebootpart");
 }
 
@@ -2479,20 +2537,16 @@ void MultiROM::executeCacheScripts()
 	if(!changeMounts(script.name))
 		return;
 
-	int had_boot;
-	std::string boot, boot_orig;
+	std::string base = getRomsPath() + script.name;
+	normalizeROMPath(base);
+	std::string bootBlob = base + "/boot.blob";
+	std::string bootImg  = base + "/boot.img";
 
-	boot = getRomsPath() + script.name;
-	normalizeROMPath(boot);
-	boot += "/boot.img";
+	std::string bootImgRealdata(bootImg);
+	normalizeROMPath(bootImgRealdata);
+	translateToRealdata(bootImgRealdata);
 
-	boot_orig = boot;
-
-	translateToRealdata(boot);
-
-	had_boot = access(boot.c_str(), F_OK) >= 0;
-
-	if(!fakeBootPartition(boot.c_str()))
+	if(!fakeBootPartition(bootImgRealdata.c_str()))
 	{
 		restoreMounts();
 		return;
@@ -2512,6 +2566,12 @@ void MultiROM::executeCacheScripts()
 	restoreBootPartition();
 	restoreMounts();
 
+	if (TWFunc::Get_File_Size(bootBlob) > 0)
+		unpackBootBlob(bootBlob, bootImg);
+	else
+		gui_print("WARNING: Ignoring empty boot blob!\n");
+	remove(bootBlob.c_str());
+
 	if(script.type & MASK_UTOUCH)
 	{
 		ubuntuTouchProcessBoot(getRomsPath() + script.name, "ubuntu-touch-sysimage-init");
@@ -2524,13 +2584,7 @@ void MultiROM::executeCacheScripts()
 	}
 	else if(script.type & MASK_ANDROID)
 	{
-		if(!had_boot && compareFiles(getBootDev().c_str(), boot_orig.c_str()))
-			unlink(boot_orig.c_str());
-		else
-		{
-			DataManager::SetValue("tw_multirom_share_kernel", !had_boot);
-			extractBootForROM(getRomsPath() + script.name);
-		}
+		extractBootForROM(getRomsPath() + script.name);
 
 		gui_print("\nRebooting...\n");
 		usleep(2000000); // Sleep for 2 seconds before rebooting
@@ -2732,7 +2786,6 @@ bool MultiROM::copyInternal(const std::string& dest_name)
 		goto erase_incomplete;
 	}
 
-	DataManager::SetValue("tw_multirom_share_kernel", 0);
 	if(!extractBootForROM(dest_dir))
 		goto erase_incomplete;
 
@@ -2788,7 +2841,7 @@ bool MultiROM::copySecondaryToInternal(const std::string& rom_name)
 		return false;
 	}
 
-	injectBoot(getBootDev(), true);
+	injectBoot(getBootDev());
 
 	static const char *parts[] = { "system", "data", "cache" };
 	for(size_t i = 0; i < sizeof(parts)/sizeof(parts[0]); ++i)

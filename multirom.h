@@ -133,11 +133,11 @@ public:
 	static bool move(std::string from, std::string to);
 	static bool erase(std::string name);
 
-	static bool flashZip(std::string rom, std::string file);
+	static bool flashZip(const std::string &rom, std::string file, int *wipe_cache);
 	static bool flashORSZip(std::string file, int *wipe_cache);
-	static bool injectBoot(std::string img_path, bool only_if_older = false);
 	static bool extractBootForROM(std::string base);
-	static int copyBoot(std::string& orig, std::string rom);
+	static bool replaceBootImg(const std::string &bootBlob, const std::string &rom);
+	static bool reinstall();
 	static bool wipe(std::string name, std::string what);
 	static bool initBackup(const std::string& name);
 	static void deinitBackup();
@@ -184,6 +184,9 @@ private:
 	static int getTrampolineVersion();
 	static int getTrampolineVersion(const std::string& path, bool silent = false);
 
+	static bool unpackBootBlob(const std::string &bootBlob, const std::string &bootImg);
+	static bool injectBoot(const std::string &img_path, const char *newKernel = 0);
+
 	static bool ubuntuExtractImage(std::string name, std::string img_path, std::string dest);
 	static bool patchUbuntuInit(std::string rootDir);
 	static bool ubuntuUpdateInitramfs(std::string rootDir);
@@ -214,6 +217,7 @@ private:
 	static baseFolders m_base_folders;
 	static int m_base_folder_cnt;
 	static std::string m_boot_dev;
+	static std::string m_staging_dev;
 	static bool m_has_firmware;
 };
 

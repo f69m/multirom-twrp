@@ -57,7 +57,6 @@
 				<image resource="main_button" />
 				<actions>
 					<action function="set">tw_multirom_type=1</action>
-					<action function="set">tw_multirom_share_kernel=0</action>
 					<action function="multirom_add"/>
 				</actions>
 			</object>
@@ -87,30 +86,17 @@
 				<highlight color="%highlight_color%" />
 				<placement x="%col1_x%" y="%row2_y%" />
 				<font resource="font" color="%button_text_color%" />
-				<text>Inject boot.img file</text>
-				<image resource="main_button" />
-				<actions>
-					<action function="set">tw_multirom_add_bootimg=0</action>
-					<action function="set">tw_back=multirom_main</action>
-					<action function="set">tw_action=multirom_inject</action>
-					<action function="set">tw_text1=Inject boot image </action>
-					<action function="set">tw_text3=?</action>
-					<action function="page">multirom_inject_select</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<placement x="%col2_x%" y="%row2_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Inject curr. boot sector</text>
+				<text>Reinstall</text>
 				<image resource="main_button" />
 				<actions>
 					<action function="set">tw_back=multirom_main</action>
-					<action function="set">tw_action=multirom_inject_curr_boot</action>
-					<action function="set">tw_text1=Inject current boot partition?</action>
-					<action function="set">tw_action_text1=Injecting...</action>
-					<action function="set">tw_complete_text1=Boot partition injected.</action>
+					<action function="set">tw_action=multirom_reinstall</action>
+					<action function="set">tw_text1=Reinstall MultiROM to boot partition?</action>
+					<action function="set">tw_text2=Reinstallation will break booting the primary ROM,</action>
+					<action function="set">tw_text3=unless your device currently boots straight into</action>
+					<action function="set">tw_text4=your primary ROM without the MultiROM screen!</action>
+					<action function="set">tw_action_text1=Reinstalling...</action>
+					<action function="set">tw_complete_text1=MultiROM reinstalled.</action>
 					<action function="set">tw_slider_text=Swipe to Confirm</action>
 					<action function="set">tw_show_reboot=0</action>
 					<action function="page">confirm_action</action>
@@ -119,7 +105,7 @@
 
 			<object type="button">
 				<highlight color="%highlight_color%" />
-				<placement x="%col3_x%" y="%row2_y%" />
+				<placement x="%col2_x%" y="%row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>Swap ROMs</text>
 				<image resource="main_button" />
@@ -290,7 +276,17 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%col3_x%" y="%mrom_row2_y%" />
+				<placement x="%col1_x%" y="%mrom_row2_y%" />
+				<font resource="font" color="%button_text_color%" />
+				<text>Flash ZIP</text>
+				<image resource="main_button" />
+				<action function="page">multirom_flash_select</action>
+			</object>
+
+			<object type="button">
+				<highlight color="%highlight_color%" />
+				<condition var1="tw_multirom_is_android" var2="1" />
+				<placement x="%col2_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
 				<text>ADB sideload</text>
 				<image resource="main_button" />
@@ -310,11 +306,17 @@
 			<object type="button">
 				<highlight color="%highlight_color%" />
 				<condition var1="tw_multirom_is_android" var2="1" />
-				<placement x="%col1_x%" y="%mrom_row2_y%" />
+				<placement x="%col3_x%" y="%mrom_row2_y%" />
 				<font resource="font" color="%button_text_color%" />
-				<text>Flash ZIP</text>
+				<text>Replace boot.img</text>
 				<image resource="main_button" />
-				<action function="page">multirom_flash_select</action>
+				<actions>
+					<action function="set">tw_back=multirom_list</action>
+					<action function="set">tw_action=multirom_replace_bootimg</action>
+					<action function="set">tw_text1=Replace boot.img</action>
+					<action function="set">tw_text3=to rom %tw_multirom_rom%?</action>
+					<action function="page">multirom_replace_select</action>
+				</actions>
 			</object>
 
 			<object type="button">
@@ -368,49 +370,6 @@
 					<action function="set">tw_text1=Disable flash-kernel?</action>
 					<action function="set">tw_action_text1=Working...</action>
 					<action function="set">tw_complete_text1=Flash-kernel patched</action>
-					<action function="set">tw_slider_text=Swipe to Confirm</action>
-					<action function="set">tw_show_reboot=0</action>
-					<action function="page">confirm_action</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_is_android" var2="1" />
-					<condition var1="tw_multirom_has_bootimg" var2="0" />
-				</conditions>
-				<placement x="%col2_x%" y="%mrom_row2_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Add boot.img</text>
-				<image resource="main_button" />
-				<actions>
-					<action function="set">tw_multirom_add_bootimg=1</action>
-					<action function="set">tw_back=multirom_list</action>
-					<action function="set">tw_action=multirom_inject</action>
-					<action function="set">tw_text1=Add/replace boot.img</action>
-					<action function="set">tw_text3=to rom %tw_multirom_rom%?</action>
-					<action function="page">multirom_inject_select</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_is_android" var2="1" />
-					<condition var1="tw_multirom_has_bootimg" var2="1" />
-				</conditions>
-				<placement x="%col2_x%" y="%mrom_row2_y%" />
-				<font resource="font" color="%button_text_color%" />
-				<text>Remove boot.img</text>
-				<image resource="main_button" />
-				<actions>
-					<action function="set">tw_back=multirom_list</action>
-					<action function="set">tw_action=multirom_rm_bootimg</action>
-					<action function="set">tw_text1=Remove boot.img from ROM:</action>
-					<action function="set">tw_text2=%tw_multirom_rom_name%</action>
-					<action function="set">tw_action_text1=Removing...</action>
-					<action function="set">tw_complete_text1=boot.img was removed!</action>
 					<action function="set">tw_slider_text=Swipe to Confirm</action>
 					<action function="set">tw_show_reboot=0</action>
 					<action function="page">confirm_action</action>
@@ -1063,13 +1022,13 @@
 			<object type="template" name="footer" />
 		</page>
 
-		<page name="multirom_inject_select">
+		<page name="multirom_replace_select">
 			<object type="template" name="header" />
 
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="%center_x%" y="%row1_text_y%" placement="5" />
-				<text>MultiROM - Inject boot.img</text>
+				<text>MultiROM - Replace boot.img</text>
 			</object>
 
 			<object type="button">
@@ -1079,7 +1038,7 @@
 				<font resource="font" color="%button_text_color%" />
 				<text>Storage: %tw_storage_display_name% (%tw_storage_free_size% MB)</text>
 				<actions>
-					<action function="set">tw_back=multirom_inject_select</action>
+					<action function="set">tw_back=multirom_replace_select</action>
 					<action function="page">selectstorage</action>
 				</actions>
 			</object>
@@ -1111,7 +1070,7 @@
 				<icon folder="folder_icon" file="file_icon" />
 				<background color="%fileselector_background%" />
 				<font resource="font" spacing="%fileselector_spacing%" color="%text_color%" highlightcolor="%fileselector_highlight_font_color%" />
-				<filter extn=".img" folders="0" files="1" />
+				<filter extn=".img;.blob" folders="0" files="1" />
 				<path name="tw_zip_location" />
 				<data name="tw_filename" />
 				<selection name="tw_file" />
@@ -1123,8 +1082,8 @@
 				<condition var1="tw_filename" op="modified" />
 				<actions>
 					<action function="set">tw_text2=%tw_filename%</action>
-					<action function="set">tw_action_text1=Injecting...</action>
-					<action function="set">tw_complete_text1=Image injected</action>
+					<action function="set">tw_action_text1=Replacing...</action>
+					<action function="set">tw_complete_text1=Boot image replaced</action>
 					<action function="set">tw_slider_text=Swipe to Confirm</action>
 					<action function="set">tw_show_reboot=0</action>
 					<action function="page">confirm_action</action>
@@ -1273,84 +1232,6 @@
 					<action function="set">tw_multirom_type=3</action>
 					<action function="page">multirom_add</action>
 				</actions>
-			</object>
-
-			<object type="text" color="%text_success_color%">
-				<condition var1="tw_multirom_type" var2="1" />
-				<font resource="font" />
-				<placement x="%col2_x%" y="%row5_text_y%" />
-				<text>Share kernel with primary ROM?</text>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_type" var2="1" />
-					<condition var1="tw_multirom_share_kernel" var2="1" />
-				</conditions>
-				<placement x="%col2_x%" y="%row6_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Share</text>
-				<image resource="radio_true" />
-				<actions>
-					<action function="set">tw_multirom_share_kernel=1</action>
-					<action function="page">multirom_add</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_type" var2="1" />
-					<condition var1="tw_multirom_share_kernel" var2="0" />
-				</conditions>
-				<placement x="%col2_x%" y="%row6_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Share</text>
-				<image resource="radio_false" />
-				<actions>
-					<action function="set">tw_multirom_share_kernel=1</action>
-					<action function="page">multirom_add</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_type" var2="1" />
-					<condition var1="tw_multirom_share_kernel" var2="1" />
-				</conditions>
-				<placement x="%col3_x%" y="%row6_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Don't share</text>
-				<image resource="radio_false" />
-				<actions>
-					<action function="set">tw_multirom_share_kernel=0</action>
-					<action function="page">multirom_add</action>
-				</actions>
-			</object>
-
-			<object type="button">
-				<highlight color="%highlight_color%" />
-				<conditions>
-					<condition var1="tw_multirom_type" var2="1" />
-					<condition var1="tw_multirom_share_kernel" var2="0" />
-				</conditions>
-				<placement x="%col3_x%" y="%row6_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Don't share</text>
-				<image resource="radio_true" />
-				<actions>
-					<action function="set">tw_multirom_share_kernel=0</action>
-					<action function="page">multirom_add</action>
-				</actions>
-			</object>
-
-			<object type="text" color="#B3B2B2">
-				<condition var1="tw_multirom_type" var2="1" />
-				<font resource="font" />
-				<placement x="%col2_x%" y="%row7_text_y%" />
-				<text>Use "Don't share" only if sharing does not work.</text>
 			</object>
 
 			<object type="listbox">
