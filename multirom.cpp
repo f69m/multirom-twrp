@@ -788,7 +788,9 @@ bool MultiROM::flashZip(const std::string &rom, std::string file, int *wipe_cach
 	std::string bootImg  = base + "/boot.img";
 	std::string bootBlobRealdata(bootBlob);
 
-	if (rom != INTERNAL_NAME)
+	bool isPrimaryRom = (rom == INTERNAL_NAME);
+
+	if (!isPrimaryRom)
 	{
 		gui_print("Preparing ZIP file...\n");
 		if(!prepareZIP(file))  // may change file var
@@ -824,12 +826,9 @@ bool MultiROM::flashZip(const std::string &rom, std::string file, int *wipe_cach
 		gui_print("ZIP successfully installed\n");
 
 	restoreBootPartition();
-	restoreMounts();
+	if (!isPrimaryRom) restoreMounts();
 
-	if (TWFunc::Get_File_Size(bootBlob) > 0)
-		unpackBootBlob(bootBlob, bootImg);
-	else
-		gui_print("WARNING: Ignoring empty boot blob!\n");
+	unpackBootBlob(bootBlob, bootImg);
 	remove(bootBlob.c_str());
 
 	std::string sideload_path = DataManager::GetStrValue("tw_mrom_sideloaded");
@@ -1526,6 +1525,14 @@ bool MultiROM::extractBootForROM(std::string base)
 
 bool MultiROM::unpackBootBlob(const std::string &bootBlob, const std::string &bootImg)
 {
+	size_t size = TWFunc::Get_File_Size(bootBlob);
+	LOGINFO("Boot blob size: %lu\n", size);
+
+	if (size <= 0) {
+		gui_print("WARNING: Ignoring empty boot blob!\n");
+		return false;
+	}
+
 	gui_print("Unpacking boot blob...\n");
 
 	if (!blobUnPackBootImage(bootBlob.c_str(), bootImg.c_str())) {
@@ -2362,12 +2369,9 @@ bool MultiROM::fakeBootPartition(const char *fakeImg)
 
 	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_staging_dev.c_str());
 	system_args("mv \"%s\" \"%s\"-orig", m_staging_dev.c_str(), m_staging_dev.c_str());
+	system_args("rm -f \"%s\"", fakeImg);
 	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_staging_dev.c_str());
 
-#ifdef BOARD_BOOTIMAGE_PARTITION_SIZE
-	// because of bloody abootimg
-	truncate(fakeImg, BOARD_BOOTIMAGE_PARTITION_SIZE);
-#endif
 	return true;
 }
 
