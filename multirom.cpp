@@ -7,7 +7,7 @@
 #include <linux/xattr.h>
 #include <sys/xattr.h>
 
-// clone libbootimg to /system/extras/ from
+// clone libbootimg to /external/ from
 // https://github.com/Tasssadar/libbootimg.git
 #include <libbootimg.h>
 
