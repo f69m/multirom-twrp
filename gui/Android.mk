@@ -34,6 +34,8 @@ endif
 LOCAL_SHARED_LIBRARIES += libminuitwrp libc libstdc++
 LOCAL_MODULE := libguitwrp
 
+LOCAL_CFLAGS += -DTW_VERSION_DAY='"$(TW_VERSION_DAY)"'
+
 # Use this flag to create a build that simulates threaded actions like installing zips, backups, restores, and wipes for theme testing
 #TWRP_SIMULATE_ACTIONS := true
 ifeq ($(TWRP_SIMULATE_ACTIONS), true)
