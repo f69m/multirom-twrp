@@ -584,7 +584,7 @@ bool MultiROM::changeMounts(std::string name)
 
 	if(!data)
 	{
-		gui_print("Failed to find data or boot device!\n");
+		gui_print("Failed to find data partititon!\n");
 		m_path.clear();
 		PartitionManager.Pop_Context();
 		PartitionManager.Update_System_Details();
@@ -613,7 +613,7 @@ bool MultiROM::changeMounts(std::string name)
 		DataManager::SetValue("tw_storage_path", path);
 	}
 
-	if(!data->Mount(true))
+	if(!realdata->Mount(true))
 	{
 		gui_print("Failed to mount realdata, canceling!\n");
 		PartitionManager.Pop_Context();
