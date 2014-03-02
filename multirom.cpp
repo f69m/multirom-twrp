@@ -1267,11 +1267,13 @@ bool MultiROM::replaceBootImg(const std::string &bootBlob, const std::string &ro
 // action "multirom_reinstall"
 bool MultiROM::reinstall()
 {
-	// Save current boot image for primary ROM
-	std::string primaryBootIng = getPath() + "/"INTERNAL_NAME"/boot.img";
-	system_args("dd if=%s of=\"%s\"", m_boot_dev.c_str(), primaryBootIng.c_str());
-	// No need to inject the primary boot image, it boots with the
-	// proper partitions automagically
+	// Save current boot image for primary ROM, if it does not exist
+	std::string primaryBootImg = getPath() + "/"INTERNAL_NAME"/boot.img";
+	if (!TWFunc::Path_Exists(primaryBootImg)) {
+		system_args("dd if=%s of=\"%s\"", m_boot_dev.c_str(), primaryBootImg.c_str());
+		// No need to inject the primary boot image, it boots with the
+		// proper partitions automagically
+	}
 
 	// Install boot image with new kernel and injected ramdisk
 	std::string newKernel = getPath() + "/zImage";

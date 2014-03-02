@@ -92,9 +92,6 @@
 					<action function="set">tw_back=multirom_main</action>
 					<action function="set">tw_action=multirom_reinstall</action>
 					<action function="set">tw_text1=Reinstall MultiROM to boot partition?</action>
-					<action function="set">tw_text2=Reinstallation will break booting the primary ROM,</action>
-					<action function="set">tw_text3=unless your device currently boots straight into</action>
-					<action function="set">tw_text4=your primary ROM without the MultiROM screen!</action>
 					<action function="set">tw_action_text1=Reinstalling...</action>
 					<action function="set">tw_complete_text1=MultiROM reinstalled.</action>
 					<action function="set">tw_slider_text=Swipe to Confirm</action>
