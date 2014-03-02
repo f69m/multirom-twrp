@@ -784,12 +784,6 @@ bool MultiROM::flashZip(const std::string &rom, std::string file, int *wipe_cach
 	if(!verifyZIP(file, verify_status))
 		return false;
 
-	std::string base = getRomsPath() + rom;
-	normalizeROMPath(base);
-	std::string bootBlob = base + "/boot.blob";
-	std::string bootImg  = base + "/boot.img";
-	std::string bootBlobRealdata(bootBlob);
-
 	bool isPrimaryRom = (rom == INTERNAL_NAME);
 
 	if (!isPrimaryRom)
@@ -803,7 +797,17 @@ bool MultiROM::flashZip(const std::string &rom, std::string file, int *wipe_cach
 			gui_print("Failed to change mountpoints!\n");
 			return false;
 		}
+	}
 
+	// Run after changeMounts()
+	// For ROM names with spaces running normalizeROMPath() breaks changeMounts()
+	std::string base = getRomsPath() + rom;
+	normalizeROMPath(base);
+	std::string bootBlob = base + "/boot.blob";
+	std::string bootImg  = base + "/boot.img";
+	std::string bootBlobRealdata(bootBlob);
+
+	if (!isPrimaryRom) {
 		translateToRealdata(bootBlobRealdata);
 		translateToRealdata(file);
 	}
