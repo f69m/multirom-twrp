@@ -754,7 +754,8 @@ void MultiROM::normalizeROMPath(std::string& path)
 		path += "a";
 
 	m_mount_rom_paths[1] = path;
-	system_args("mv \"%s\" \"%s\"", m_mount_rom_paths[0].c_str(), path.c_str());
+	if (system_args("mv \"%s\" \"%s\"", m_mount_rom_paths[0].c_str(), path.c_str()) != 0)
+		LOGERR("Failed to rename '%s' to '%s'\n", m_mount_rom_paths[0].c_str(), path.c_str());
 }
 
 void MultiROM::restoreROMPath()
@@ -762,7 +763,8 @@ void MultiROM::restoreROMPath()
 	if(m_mount_rom_paths[0].empty())
 		return;
 
-	system_args("mv \"%s\" \"%s\"", m_mount_rom_paths[1].c_str(), m_mount_rom_paths[0].c_str());
+	if (system_args("mv \"%s\" \"%s\"", m_mount_rom_paths[1].c_str(), m_mount_rom_paths[0].c_str()) != 0)
+		LOGERR("Failed to rename '%s' to '%s'\n", m_mount_rom_paths[1].c_str(), m_mount_rom_paths[0].c_str());
 	m_mount_rom_paths[0].clear();
 }
 
