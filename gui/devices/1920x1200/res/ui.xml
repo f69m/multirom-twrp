@@ -48,6 +48,9 @@
 		<variable name="col4_x" value="1350" />
 		<variable name="row1_y" value="220" />
 		<variable name="row2_y" value="680" />
+		<variable name="mrom_row1_y" value="249" />
+		<variable name="mrom_row2_y" value="471" />
+		<variable name="mrom_row3_y" value="693" />
 		<variable name="col_center_x" value="780" />
 		<variable name="center_x" value="960" />
 		<variable name="screen_width" value="1920" />
@@ -656,14 +659,6 @@
 				<font resource="font" color="%text_color%" />
 				<text>Zip file signature verification?</text>
 				<data variable="tw_signed_zip_verify" />
-				<image checked="checkbox_true" unchecked="checkbox_false" />
-			</object>
-
-			<object type="checkbox">
-				<placement x="%col2_x%" y="%row8_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Inject MultiROM after installation.</text>
-				<data variable="tw_auto_inject_mrom" />
 				<image checked="checkbox_true" unchecked="checkbox_false" />
 			</object>
 
@@ -3884,14 +3879,6 @@
 				<font resource="font" color="%text_color%" />
 				<text>Wipe Cache.</text>
 				<data variable="tw_wipe_cache" />
-				<image checked="checkbox_true" unchecked="checkbox_false" />
-			</object>
-
-			<object type="checkbox">
-				<placement x="%col1_x%" y="%row5_text_y%" />
-				<font resource="font" color="%text_color%" />
-				<text>Inject MultiROM after installation.</text>
-				<data variable="tw_auto_inject_mrom" />
 				<image checked="checkbox_true" unchecked="checkbox_false" />
 			</object>
 
