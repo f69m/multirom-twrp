@@ -351,7 +351,7 @@ LOCAL_CFLAGS =
 ifneq ($(wildcard system/core/libmincrypt/rsa_e_3.c),)
     LOCAL_CFLAGS += -DHAS_EXPONENT
 endif
-LOCAL_SRC_FILES = adb_install.cpp bootloader.cpp verifier.cpp mtdutils/mtdutils.c
+LOCAL_SRC_FILES = adb_install.cpp bootloader.cpp verifier.cpp mtdutils/mtdutils.c legacy_property_service.c
 LOCAL_SHARED_LIBRARIES += libc liblog libcutils libmtdutils
 LOCAL_STATIC_LIBRARIES += libmincrypt
 
