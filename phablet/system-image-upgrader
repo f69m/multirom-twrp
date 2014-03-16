@@ -247,7 +247,7 @@ do
                 path=$3
 
                 if [ -e partitions/${part}.img ] && [ -e $path ]; then
-                    if [ ${part} = "boot" ]; then
+                    if [ ${part} = "boot" ] || [ ${part} = "staging" ]; then
                         echo "Flashing ${part} at ${path}"
                         cat partitions/${part}.img > ${path}
                     else

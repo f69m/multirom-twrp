@@ -2364,20 +2364,18 @@ bool MultiROM::fakeBootPartition(const char *fakeImg)
 		return false;
 	}
 
-	if(access(fakeImg, F_OK) < 0)
+	system_args("rm -f \"%s\"", fakeImg);
+
+	int fd = creat(fakeImg, 0644);
+	if(fd < 0)
 	{
-		int fd = creat(fakeImg, 0644);
-		if(fd < 0)
-		{
-			gui_print("Failed to create fake boot image file %s (%s)!\n", fakeImg, strerror(errno));
-			return false;
-		}
-		close(fd);
+		gui_print("Failed to create fake boot image file %s (%s)!\n", fakeImg, strerror(errno));
+		return false;
 	}
+	close(fd);
 
 	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_staging_dev.c_str());
 	system_args("mv \"%s\" \"%s\"-orig", m_staging_dev.c_str(), m_staging_dev.c_str());
-	system_args("rm -f \"%s\"", fakeImg);
 	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_staging_dev.c_str());
 
 	return true;
@@ -2554,11 +2552,11 @@ void MultiROM::executeCacheScripts()
 	std::string bootBlob = base + "/boot.blob";
 	std::string bootImg  = base + "/boot.img";
 
-	std::string bootImgRealdata(bootImg);
-	normalizeROMPath(bootImgRealdata);
-	translateToRealdata(bootImgRealdata);
+	std::string bootBlobRealdata(bootBlob);
+	normalizeROMPath(bootBlobRealdata);
+	translateToRealdata(bootBlobRealdata);
 
-	if(!fakeBootPartition(bootImgRealdata.c_str()))
+	if(!fakeBootPartition(bootBlobRealdata.c_str()))
 	{
 		restoreMounts();
 		return;
