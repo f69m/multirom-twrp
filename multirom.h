@@ -119,7 +119,7 @@ public:
 	static std::string listRoms(uint32_t mask = MASK_ALL, bool with_bootimg_only = false);
 	static void setInstaller(MROMInstaller *i);
 	static MROMInstaller *getInstaller(MROMInstaller *i);
-	static std::string getBootDev() { return m_boot_dev; }
+	static const std::string &getBootDev() { return m_boot_dev; }
 	static bool hasFirmwareDev() { return m_has_firmware; }
 	static void updateSupportedSystems();
 
@@ -133,11 +133,11 @@ public:
 	static bool move(std::string from, std::string to);
 	static bool erase(std::string name);
 
-	static bool flashZip(std::string rom, std::string file);
+	static bool flashZip(const std::string &rom, std::string file, int *wipe_cache);
 	static bool flashORSZip(std::string file, int *wipe_cache);
-	static bool injectBoot(std::string img_path, bool only_if_older = false);
 	static bool extractBootForROM(std::string base);
-	static int copyBoot(std::string& orig, std::string rom);
+	static bool replaceBootImg(const std::string &bootBlob, const std::string &rom);
+	static bool reinstall();
 	static bool wipe(std::string name, std::string what);
 	static bool initBackup(const std::string& name);
 	static void deinitBackup();
@@ -185,7 +185,7 @@ private:
 	static int getTrampolineVersion(const std::string& path, bool silent = false);
 
 	static bool unpackBootBlob(const std::string &bootBlob, const std::string &bootImg);
-	static bool injectBoot(const std::string &img_path, const char *newKernel = 0);
+	static bool injectBoot(const std::string &img_path, const std::string &out_path);
 
 	static bool ubuntuExtractImage(std::string name, std::string img_path, std::string dest);
 	static bool patchUbuntuInit(std::string rootDir);

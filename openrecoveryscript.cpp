@@ -444,18 +444,15 @@ int OpenRecoveryScript::Install_Command(string Zip) {
 		gui_print("Unable to locate zip file '%s'.\n", Zip.c_str());
 		ret_val = 1;
 	} else {
-		if(DataManager::GetIntValue(TW_ORS_IS_SECONDARY_ROM) == 1)
+		if(DataManager::GetIntValue(TW_ORS_IS_SECONDARY_ROM) == 1) {
+			// Secondary ROM, mount points and fake boot are aready set up
 			ret_val = !MultiROM::flashORSZip(Zip, &wipe_cache);
-		else
-		{
-			gui_print("Installing zip file '%s'\n", Zip.c_str());
+		} else if (MultiROM::folderExists()) {
+			// Primary ROM, need to set up fake boot
+			ret_val = !MultiROM::flashZip(INTERNAL_NAME, Zip, &wipe_cache);
+		} else {
+			// MultiROM is not installed, flash normally
 			ret_val = TWinstall_zip(Zip.c_str(), &wipe_cache);
-
-			if(DataManager::GetIntValue(TW_AUTO_INJECT_MROM) == 1 && MultiROM::folderExists())
-			{
-				gui_print("Injecting boot.img with MultiROM...\n");
-				MultiROM::injectBoot(MultiROM::getBootDev(), true);
-			}
 		}
 	}
 	if (ret_val != 0) {

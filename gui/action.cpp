@@ -230,7 +230,9 @@ int GUIAction::flash_zip(std::string filename, std::string pageName, const int s
 	if (simulate) {
 		simulate_progress_bar();
 	} else {
-		ret_val = TWinstall_zip(filename.c_str(), wipe_cache);
+		ret_val = !MultiROM::flashZip(INTERNAL_NAME, filename.c_str(), wipe_cache);
+		if (!ret_val)
+			ret_val = !MultiROM::extractBootForROM(MultiROM::getRomsPath() + INTERNAL_NAME);
 
 		// Now, check if we need to ensure TWRP remains installed...
 		struct stat st;
@@ -1028,46 +1030,37 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 
 			std::string name = DataManager::GetStrValue("tw_multirom_rom_name");
 			std::string boot = MultiROM::getRomsPath() + name + "/boot.img";
-			int had_boot = access(boot.c_str(), F_OK) >= 0;
+			std::string file = DataManager::GetStrValue("tw_filename");
+			int wipe_cache = 0;
 
-			if (!MultiROM::flashZip(name, DataManager::GetStrValue("tw_filename")))
+			if (!MultiROM::flashZip(name, file, &wipe_cache))
 				op_status = 1;
 
-			if(!had_boot && MultiROM::compareFiles(MultiROM::getBootDev().c_str(), boot.c_str()))
-				unlink(boot.c_str());
-			else if(op_status == 0)
-			{
-				DataManager::SetValue("tw_multirom_share_kernel", 0);
-				if(!MultiROM::extractBootForROM(MultiROM::getRomsPath() + name))
-					op_status = 1;
-			}
+			if(!MultiROM::extractBootForROM(MultiROM::getRomsPath() + name))
+				op_status = 1;
 
 			operation_end(op_status, simulate);
 			return 0;
 		}
 
-		if (function == "multirom_inject")
+		if (function == "multirom_replace_bootimg")
 		{
-			operation_start("Injecting");
-			int op_status = 0;
+			operation_start("Replacing boot image");
 			std::string path = DataManager::GetStrValue("tw_filename");
-			if(DataManager::GetIntValue("tw_multirom_add_bootimg"))
-				op_status = MultiROM::copyBoot(path, DataManager::GetStrValue("tw_multirom_rom_name"));
-
-			if(!op_status)
-				op_status = !MultiROM::injectBoot(path);
+			std::string rom = DataManager::GetStrValue("tw_multirom_rom_name");
+			int op_status = !MultiROM::replaceBootImg(path, rom);
 			operation_end(op_status, simulate);
 			return 0;
 		}
 
-		if (function == "multirom_inject_curr_boot")
+		if (function == "multirom_reinstall")
 		{
-			operation_start("Injecting");
+			operation_start("Reinstalling MultiROM to boot partition");
 			int op_status = !MultiROM::folderExists();
 			if(op_status)
 				gui_print("MultiROM is not installed!\n");
 			else
-				op_status = !MultiROM::injectBoot(MultiROM::getBootDev());
+				op_status = !MultiROM::reinstall();
 			operation_end(op_status, simulate);
 			return 0;
 		}
@@ -1129,15 +1122,6 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 			operation_start("working");
 			int op_status = !MultiROM::disableFlashKernelAct(DataManager::GetStrValue("tw_multirom_rom_name"),
 															 DataManager::GetStrValue("tw_multirom_install_loc"));
-			operation_end(op_status, simulate);
-			return 0;
-		}
-
-		if(function == "multirom_rm_bootimg")
-		{
-			operation_start("working");
-			std::string cmd = "rm \"" + MultiROM::getRomsPath() + "/" + DataManager::GetStrValue("tw_multirom_rom_name") + "/boot.img\"";
-			int op_status = (system(cmd.c_str()) != 0);
 			operation_end(op_status, simulate);
 			return 0;
 		}
@@ -1424,12 +1408,6 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 					}
 					gui_print("TWRP injection complete.\n");
 				}
-			}
-
-			if(DataManager::GetIntValue(TW_AUTO_INJECT_MROM) == 1 && MultiROM::folderExists())
-			{
-				gui_print("Injecting boot.img with MultiROM...\n");
-				MultiROM::injectBoot(MultiROM::getBootDev(), true);
 			}
 
 			PartitionManager.Update_System_Details();
@@ -1844,7 +1822,9 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 				DataManager::SetValue("tw_has_cancel", 0); // Remove cancel button from gui now that the zip install is going to start
 				if (ret != 0) {
 					ret = 1; // failure
-				} else if (TWinstall_zip(Sideload_File.c_str(), &wipe_cache) == 0) {
+				} else if (MultiROM::flashZip(INTERNAL_NAME, Sideload_File.c_str(), &wipe_cache)) {
+					if (!MultiROM::extractBootForROM(MultiROM::getRomsPath() + INTERNAL_NAME))
+						ret = 1;
 					if (wipe_cache || DataManager::GetIntValue("tw_wipe_cache"))
 						PartitionManager.Wipe_By_Path("/cache");
 					if (wipe_dalvik)
@@ -1867,11 +1847,6 @@ int GUIAction::doAction(Action action, int isThreaded /* = 0 */)
 						}
 						gui_print("TWRP injection complete.\n");
 					}
-				}
-				if(DataManager::GetIntValue(TW_AUTO_INJECT_MROM) == 1 && MultiROM::folderExists())
-				{
-					gui_print("Injecting boot.img with MultiROM...\n");
-					MultiROM::injectBoot(MultiROM::getBootDev(), true);
 				}
 			}
 			operation_end(ret, simulate);
