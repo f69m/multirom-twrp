@@ -2553,7 +2553,6 @@ void MultiROM::executeCacheScripts()
 	std::string bootImg  = base + "/boot.img";
 
 	std::string bootBlobRealdata(bootBlob);
-	normalizeROMPath(bootBlobRealdata);
 	translateToRealdata(bootBlobRealdata);
 
 	if(!fakeBootPartition(bootBlobRealdata.c_str()))
