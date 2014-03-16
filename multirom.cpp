@@ -27,7 +27,7 @@
 extern "C" {
 #include "twcommon.h"
 #include "digest/md5.h"
-#include "multirom_hooks.h"
+//#include "multirom_hooks.h"
 }
 
 std::string MultiROM::m_path = "";
