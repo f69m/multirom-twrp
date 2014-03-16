@@ -198,7 +198,7 @@ std::string MultiROM::listInstallLocations()
 	size_t idx1, idx2;
 	while((fgets(line, sizeof(line), f)))
 	{
-		if(!strstr(line, "/dev/block/sd"))
+		if(!strstr(line, "/dev/block/sd") && !strstr(line, "/dev/block/mmcblk1"))
 			continue;
 
 		blk = line;
