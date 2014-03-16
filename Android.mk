@@ -33,7 +33,8 @@ LOCAL_SRC_FILES += \
 
 LOCAL_SRC_FILES += \
     multirom.cpp \
-    mrominstaller.cpp
+    mrominstaller.cpp \
+    blobunpack.cpp
 
 ifneq ($(TARGET_RECOVERY_REBOOT_SRC),)
   LOCAL_SRC_FILES += $(TARGET_RECOVERY_REBOOT_SRC)

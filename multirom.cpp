@@ -15,6 +15,8 @@
 #error "libbootimg version 0.2.0 or higher is required. Please update libbootimg."
 #endif
 
+#include "blobunpack.h"
+
 #include "multirom.h"
 #include "partitions.hpp"
 #include "twrp-functions.hpp"
@@ -32,6 +34,7 @@ extern "C" {
 
 std::string MultiROM::m_path = "";
 std::string MultiROM::m_boot_dev = "";
+std::string MultiROM::m_staging_dev = "";
 std::string MultiROM::m_mount_rom_paths[2] = { "", "" };
 std::string MultiROM::m_curr_roms_path = "";
 MROMInstaller *MultiROM::m_installer = NULL;
@@ -100,6 +103,13 @@ void MultiROM::findPath()
 		return;
 	}
 
+	TWPartition *staging = PartitionManager.Find_Partition_By_Path("/staging");
+	if (!staging) {
+		gui_print("Failed to find staging partition!\n");
+		m_path.clear();
+		return;
+	}
+
 	if(!data->Mount(true))
 	{
 		gui_print("Failed to mount /data partition!\n");
@@ -108,6 +118,7 @@ void MultiROM::findPath()
 	}
 
 	m_boot_dev = boot->Actual_Block_Device;
+	m_staging_dev = staging->Actual_Block_Device;
 
 	TWPartition *fw = PartitionManager.Find_Partition_By_Path("/firmware");
 	m_has_firmware = (fw && fw->Current_File_System == "vfat");
@@ -777,14 +788,18 @@ bool MultiROM::flashZip(std::string rom, std::string file)
 		return false;
 	}
 
-	std::string boot = getRomsPath() + rom;
-	normalizeROMPath(boot);
-	boot += "/boot.img";
+	// Run after changeMounts()
+	// For ROM names with spaces running normalizeROMPath() breaks changeMounts()
+	std::string base = getRomsPath() + rom;
+	normalizeROMPath(base);
+	std::string bootBlob = base + "/boot.blob";
+	std::string bootImg  = base + "/boot.img";
+	std::string bootBlobRealdata(bootBlob);
 
 	translateToRealdata(file);
-	translateToRealdata(boot);
-	
-	if(!fakeBootPartition(boot.c_str()))
+	translateToRealdata(bootBlobRealdata);
+
+	if(!fakeBootPartition(bootBlobRealdata.c_str()))
 	{
 		restoreMounts();
 		return false;
@@ -805,6 +820,10 @@ bool MultiROM::flashZip(std::string rom, std::string file)
 
 	restoreBootPartition();
 	restoreMounts();
+
+	// TODO: check return value, but empty boot blob is not an error
+	unpackBootBlob(bootBlob, bootImg);
+	remove(bootBlob.c_str());
 
 	std::string sideload_path = DataManager::GetStrValue("tw_mrom_sideloaded");
 	if(!sideload_path.empty())
@@ -1473,6 +1492,27 @@ bool MultiROM::extractBootForROM(std::string base)
 	}
 	else
 		system_args("rm \"%s/boot.img\"", base.c_str());
+
+	return true;
+}
+
+bool MultiROM::unpackBootBlob(const std::string &bootBlob, const std::string &bootImg)
+{
+	size_t size = TWFunc::Get_File_Size(bootBlob);
+	LOGINFO("Boot blob size: %lu\n", size);
+
+	if (size <= 0) {
+		gui_print("WARNING: Ignoring empty boot blob!\n");
+		return false;
+	}
+
+	gui_print("Unpacking boot blob...\n");
+
+	if (!blobUnPackBootImage(bootBlob.c_str(), bootImg.c_str())) {
+		LOGERR("Failed to unpack boot blob!\n");
+		return false;
+	}
+
 	return true;
 }
 
@@ -2281,9 +2321,9 @@ int MultiROM::system_args(const char *fmt, ...)
 
 bool MultiROM::fakeBootPartition(const char *fakeImg)
 {
-	if(access((m_boot_dev + "-orig").c_str(), F_OK) >= 0)
+	if(access((m_staging_dev + "-orig").c_str(), F_OK) >= 0)
 	{
-		gui_print("Failed to fake boot partition, %s-orig already exists!\n", m_boot_dev.c_str());
+		gui_print("Failed to fake boot partition, %s-orig already exists!\n", m_staging_dev.c_str());
 		return false;
 	}
 
@@ -2296,33 +2336,26 @@ bool MultiROM::fakeBootPartition(const char *fakeImg)
 			return false;
 		}
 		close(fd);
-
-		// Copy current boot.img as base
-		system_args("dd if=\"%s\" of=\"%s\"", m_boot_dev.c_str(), fakeImg);
-		gui_print("Current boot sector was used as base for fake boot.img!\n");
 	}
 
-	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_boot_dev.c_str());
-	system_args("mv \"%s\" \"%s\"-orig", m_boot_dev.c_str(), m_boot_dev.c_str());
-	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_boot_dev.c_str());
+	system_args("echo '%s' > /tmp/mrom_fakebootpart", m_staging_dev.c_str());
+	system_args("mv \"%s\" \"%s\"-orig", m_staging_dev.c_str(), m_staging_dev.c_str());
+	system_args("rm -f \"%s\"", fakeImg);
+	system_args("ln -s \"%s\" \"%s\"", fakeImg, m_staging_dev.c_str());
 
-#ifdef BOARD_BOOTIMAGE_PARTITION_SIZE
-	// because of bloody abootimg
-	truncate(fakeImg, BOARD_BOOTIMAGE_PARTITION_SIZE);
-#endif
 	return true;
 }
 
 void MultiROM::restoreBootPartition()
 {
-	if(access((m_boot_dev + "-orig").c_str(), F_OK) < 0)
+	if(access((m_staging_dev + "-orig").c_str(), F_OK) < 0)
 	{
-		gui_print("Failed to restore boot partition, %s-orig does not exist!\n", m_boot_dev.c_str());
+		gui_print("Failed to restore boot partition, %s-orig does not exist!\n", m_staging_dev.c_str());
 		return;
 	}
 
-	system_args("rm \"%s\"", m_boot_dev.c_str());
-	system_args("mv \"%s\"-orig \"%s\"", m_boot_dev.c_str(), m_boot_dev.c_str());
+	system_args("rm \"%s\"", m_staging_dev.c_str());
+	system_args("mv \"%s\"-orig \"%s\"", m_staging_dev.c_str(), m_staging_dev.c_str());
 	remove("/tmp/mrom_fakebootpart");
 }
 
@@ -2479,20 +2512,18 @@ void MultiROM::executeCacheScripts()
 	if(!changeMounts(script.name))
 		return;
 
-	int had_boot;
-	std::string boot, boot_orig;
+	std::string base = getRomsPath() + script.name;
+	normalizeROMPath(base);
+	std::string bootBlob = base + "/boot.blob";
+	std::string bootImg  = base + "/boot.img";
 
-	boot = getRomsPath() + script.name;
-	normalizeROMPath(boot);
-	boot += "/boot.img";
+	int had_boot = access(bootImg.c_str(), F_OK) >= 0;
 
-	boot_orig = boot;
+	std::string bootBlobRealdata(bootBlob);
+	normalizeROMPath(bootBlobRealdata);
+	translateToRealdata(bootBlobRealdata);
 
-	translateToRealdata(boot);
-
-	had_boot = access(boot.c_str(), F_OK) >= 0;
-
-	if(!fakeBootPartition(boot.c_str()))
+	if(!fakeBootPartition(bootBlobRealdata.c_str()))
 	{
 		restoreMounts();
 		return;
@@ -2512,6 +2543,10 @@ void MultiROM::executeCacheScripts()
 	restoreBootPartition();
 	restoreMounts();
 
+	// TODO: check return value, but empty boot blob is not an error
+	unpackBootBlob(bootBlob, bootImg);
+	remove(bootBlob.c_str());
+
 	if(script.type & MASK_UTOUCH)
 	{
 		ubuntuTouchProcessBoot(getRomsPath() + script.name, "ubuntu-touch-sysimage-init");
@@ -2524,8 +2559,8 @@ void MultiROM::executeCacheScripts()
 	}
 	else if(script.type & MASK_ANDROID)
 	{
-		if(!had_boot && compareFiles(getBootDev().c_str(), boot_orig.c_str()))
-			unlink(boot_orig.c_str());
+		if(!had_boot && compareFiles(getBootDev().c_str(), bootImg.c_str()))
+			unlink(bootImg.c_str());
 		else
 		{
 			DataManager::SetValue("tw_multirom_share_kernel", !had_boot);
