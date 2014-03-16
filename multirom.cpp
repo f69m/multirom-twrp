@@ -2787,11 +2787,14 @@ bool MultiROM::copyInternal(const std::string& dest_name)
 	if(!createDirs(dest_name, ROM_ANDROID_INTERNAL))
 		goto erase_incomplete;
 
-	gui_print("Copying boot partition...\n");
-	if(system_args("dd if=%s of=\"%s/boot.img\" bs=4096", getBootDev().c_str(), dest_dir.c_str()) != 0)
 	{
-		gui_print("Dumping boot dev failed!\n");
-		goto erase_incomplete;
+		gui_print("Copying boot image...\n");
+		std::string srcBootImg(getRomsPath() + INTERNAL_NAME + "/boot.img");
+		std::string dstBootImg(dest_dir + "boot.img");
+		if (!injectBoot(srcBootImg, dstBootImg)) {
+			LOGERR("Copying boot.img has failed!\n");
+			goto erase_incomplete;
+		}
 	}
 
 	if(!extractBootForROM(dest_dir))
@@ -2842,15 +2845,13 @@ bool MultiROM::copySecondaryToInternal(const std::string& rom_name)
 		return false;
 	}
 
-	gui_print("Writing boot partition...\n");
-	if(system_args("dd if=\"%s/boot.img\" of=\"%s\" bs=4096", src_dir.c_str(), getBootDev().c_str()) != 0)
-	{
-		gui_print("Writing boot.img has failed!\n");
+	gui_print("Copying boot image...\n");
+	std::string srcBootImg(src_dir + "boot.img");
+	std::string dstBootImg(getRomsPath() + INTERNAL_NAME + "/boot.img");
+	if (!injectBoot(srcBootImg, dstBootImg)) {
+		LOGERR("Copying boot.img has failed!\n");
 		return false;
 	}
-
-	const std::string &bootDev(getBootDev());
-	injectBoot(bootDev, bootDev);
 
 	static const char *parts[] = { "system", "data", "cache" };
 	for(size_t i = 0; i < sizeof(parts)/sizeof(parts[0]); ++i)
