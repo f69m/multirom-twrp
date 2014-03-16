@@ -48,6 +48,9 @@
 		<variable name="col4_x" value="889" />
 		<variable name="row1_y" value="127" />
 		<variable name="row2_y" value="388" />
+		<variable name="mrom_row1_y" value="166" />
+		<variable name="mrom_row2_y" value="314" />
+		<variable name="mrom_row3_y" value="462" />
 		<variable name="col_center_x" value="520" />
 		<variable name="center_x" value="640" />
 		<variable name="screen_width" value="1280" />
@@ -134,6 +137,8 @@
 		<variable name="console_action_height" value="320" />
 		<variable name="console_install_height" value="440" />
 		<variable name="console_installdone_height" value="300" />
+		<variable name="fileselector_x" value="28" />
+		<variable name="fileselector_width" value="790" />
 		<variable name="fileselector_folder_x" value="28" />
 		<variable name="fileselector_folder_width" value="410" />
 		<variable name="fileselector_folderonly_width" value="588" />
