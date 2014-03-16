@@ -47,7 +47,7 @@ enum
 #define MASK_UTOUCH (M(ROM_UTOUCH_INTERNAL) | M(ROM_UTOUCH_USB_IMG) | M(ROM_UTOUCH_USB_DIR))
 #define MASK_ALL 0xFFFFFFFF
 
-#define INTERNAL_NAME "Internal"
+#define INTERNAL_NAME "Primary"
 #define REALDATA "/realdata"
 #define MAX_ROM_NAME 26
 #define INTERNAL_MEM_LOC_TXT "Internal memory"

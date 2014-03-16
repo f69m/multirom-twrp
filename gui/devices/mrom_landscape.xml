@@ -170,7 +170,7 @@
 				<path name="tw_multirom_folder" />
 				<data name="tw_multirom_rom" default="" />
 				<excludes>
-					<exclude>Internal</exclude>
+					<exclude>Primary</exclude>
 				</excludes>
 				<selection name="tw_multirom_rom_name" />
 			</object>
@@ -284,7 +284,7 @@
 				</conditions>
 				<font resource="font" />
 				<placement x="%center_x%" y="%row8_text_y%" placement="5" />
-				<text>(Backup available only if ROM doesn't share kernel with Internal)</text>
+				<text>(Backup available only if ROM doesn't share kernel with Primary)</text>
 			</object>
 
 			<object type="button">
@@ -1023,7 +1023,7 @@
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="%center_x%" y="%row2_text_y%" placement="5"/>
-				<text>Set new name for Internal ROM</text>
+				<text>Set new name for primary ROM</text>
 			</object>
 
 			<object type="input">
@@ -1279,7 +1279,7 @@
 				<condition var1="tw_multirom_type" var2="1" />
 				<font resource="font" />
 				<placement x="%col2_x%" y="%row5_text_y%" />
-				<text>Share kernel with Internal ROM?</text>
+				<text>Share kernel with primary ROM?</text>
 			</object>
 
 			<object type="button">
@@ -2157,7 +2157,7 @@
 				<condition var1="tw_multirom_swap_type" var2="0" />
 				<placement x="%col1_x%" y="%row3_text_y%" />
 				<font resource="font" color="%text_color%" />
-				<text>Swap primary (Internal) ROM with secondary</text>
+				<text>Swap primary ROM with secondary</text>
 				<image resource="radio_true" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=0</action>
@@ -2170,7 +2170,7 @@
 				<condition var1="tw_multirom_swap_type" var2="0" op="!=" />
 				<placement x="%col1_x%" y="%row3_text_y%" />
 				<font resource="font" color="%text_color%" />
-				<text>Swap primary (Internal) ROM with secondary</text>
+				<text>Swap primary ROM with secondary</text>
 				<image resource="radio_false" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=0</action>
@@ -2188,7 +2188,7 @@
 				<image resource="radio_true" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=1</action>
-					<action function="set">tw_multirom_swap_rom=Internal</action>
+					<action function="set">tw_multirom_swap_rom=Primary</action>
 					<action function="page">multirom_swap</action>
 				</actions>
 			</object>
@@ -2216,7 +2216,7 @@
 				<image resource="radio_true" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=2</action>
-					<action function="set">tw_multirom_swap_rom=Internal</action>
+					<action function="set">tw_multirom_swap_rom=Primary</action>
 					<action function="page">multirom_swap</action>
 				</actions>
 			</object>
@@ -2230,7 +2230,7 @@
 				<image resource="radio_false" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=2</action>
-					<action function="set">tw_multirom_swap_rom=Internal</action>
+					<action function="set">tw_multirom_swap_rom=Primary</action>
 					<action function="page">multirom_swap</action>
 				</actions>
 			</object>
@@ -2244,7 +2244,7 @@
 				<image resource="radio_true" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=3</action>
-					<action function="set">tw_multirom_swap_rom=Internal</action>
+					<action function="set">tw_multirom_swap_rom=Primary</action>
 					<action function="page">multirom_swap</action>
 				</actions>
 			</object>
@@ -2258,7 +2258,7 @@
 				<image resource="radio_false" />
 				<actions>
 					<action function="set">tw_multirom_swap_type=3</action>
-					<action function="set">tw_multirom_swap_rom=Internal</action>
+					<action function="set">tw_multirom_swap_rom=Primary</action>
 					<action function="page">multirom_swap</action>
 				</actions>
 			</object>
@@ -2408,7 +2408,7 @@
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="%center_x%" y="%row2_text_y%" placement="5"/>
-				<text>Set new name for Internal ROM</text>
+				<text>Set new name for primary ROM</text>
 			</object>
 
 			<object type="input">

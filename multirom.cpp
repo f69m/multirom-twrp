@@ -2705,7 +2705,7 @@ bool MultiROM::copyXAttrs(const std::string& from, const std::string& to, unsign
 
 bool MultiROM::copyInternal(const std::string& dest_name)
 {
-	gui_print("Copying Internal ROM to \"%s\"\n", dest_name.c_str());
+	gui_print("Copying primary ROM to \"%s\"\n", dest_name.c_str());
 
 	std::string dest_dir = getRomsPath() + dest_name + "/";
 	if(access(dest_dir.c_str(), F_OK) >= 0)
@@ -2764,7 +2764,7 @@ bool MultiROM::wipeInternal()
 
 bool MultiROM::copySecondaryToInternal(const std::string& rom_name)
 {
-	gui_print("Copying secondary ROM \"%s\" to Internal...\n", rom_name.c_str());
+	gui_print("Copying secondary ROM \"%s\" to primary ROM...\n", rom_name.c_str());
 
 	std::string src_dir = getRomsPath() + rom_name + "/";
 	if(access(src_dir.c_str(), F_OK) < 0)
